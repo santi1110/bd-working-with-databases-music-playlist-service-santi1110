@@ -92,6 +92,7 @@ public class MT1DesignClassDiagramIntrospectionTests {
     @ParameterizedTest
     @ValueSource(strings = {"AlbumTrackDao", "PlaylistDao"})
     void mt1Design_getClassDiagram_daosContainDynamoDBMapper(String type) {
+        System.out.println("Class Diagram Content:\n" + content);
         assertClassDiagramTypeContainsMember(
             content, type, "dynamoDbMapper\\s*:\\sDynamoDBMapper", "dynamoDbMapper");
     }
