@@ -59,15 +59,20 @@ public class UpdatePlaylistActivity implements RequestHandler<UpdatePlaylistRequ
 
         String playlistId = updatePlaylistRequest.getId();
         Playlist existingPlaylist = playlistDao.getPlaylist(playlistId);
-        validateRequest(updatePlaylistRequest,existingPlaylist);
-        updatePlaylist(existingPlaylist,updatePlaylistRequest);
+
+        // Validate the request and perform updates
+        validateRequest(updatePlaylistRequest, existingPlaylist);
+        updatePlaylist(existingPlaylist, updatePlaylistRequest);
+
+        // Save the updated playlist back to the database
         playlistDao.savePlaylist(existingPlaylist);
 
+        // Convert the updated playlist to a model for result
         PlaylistModel updatedPlaylistModel = new ModelConverter().toPlaylistModel(existingPlaylist);
 
 
         return UpdatePlaylistResult.builder()
-                .withPlaylist(new PlaylistModel())
+                .withPlaylist(updatedPlaylistModel)
                 .build();
     }
 
@@ -89,8 +94,7 @@ public class UpdatePlaylistActivity implements RequestHandler<UpdatePlaylistRequ
     }
 
     private void updatePlaylist(Playlist existingPlaylist, UpdatePlaylistRequest updateRequest) {
-        existingPlaylist.setName(updateRequest.getName());
-        existingPlaylist.setTags(updateRequest.getTags() != null ? new HashSet<>(updateRequest.getTags()) : null);
-    }
-
-}
+        if (updateRequest.getName() != null) {
+            existingPlaylist.setName(updateRequest.getName());
+        }
+    }}
