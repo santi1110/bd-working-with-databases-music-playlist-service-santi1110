@@ -19,7 +19,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 public class UpdatePlaylistActivityTest {
     @Mock
     private PlaylistDao playlistDao;
-
+    //
     private UpdatePlaylistActivity updatePlaylistActivity;
 
     @BeforeEach
