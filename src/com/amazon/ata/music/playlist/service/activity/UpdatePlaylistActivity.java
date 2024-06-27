@@ -1,14 +1,21 @@
 package com.amazon.ata.music.playlist.service.activity;
 
+import com.amazon.ata.music.playlist.service.converters.ModelConverter;
+import com.amazon.ata.music.playlist.service.dynamodb.models.Playlist;
+import com.amazon.ata.music.playlist.service.exceptions.InvalidAttributeChangeException;
+import com.amazon.ata.music.playlist.service.exceptions.InvalidAttributeValueException;
 import com.amazon.ata.music.playlist.service.models.PlaylistModel;
 import com.amazon.ata.music.playlist.service.models.requests.UpdatePlaylistRequest;
 import com.amazon.ata.music.playlist.service.models.results.UpdatePlaylistResult;
 import com.amazon.ata.music.playlist.service.dynamodb.PlaylistDao;
 
+import com.amazon.ata.music.playlist.service.util.MusicPlaylistServiceUtils;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.HashSet;
 
 /**
  * Implementation of the UpdatePlaylistActivity for the MusicPlaylistService's UpdatePlaylist API.
@@ -50,8 +57,40 @@ public class UpdatePlaylistActivity implements RequestHandler<UpdatePlaylistRequ
     public UpdatePlaylistResult handleRequest(final UpdatePlaylistRequest updatePlaylistRequest, Context context) {
         log.info("Received UpdatePlaylistRequest {}", updatePlaylistRequest);
 
+        String playlistId = updatePlaylistRequest.getId();
+        Playlist existingPlaylist = playlistDao.getPlaylist(playlistId);
+        validateRequest(updatePlaylistRequest,existingPlaylist);
+        updatePlaylist(existingPlaylist,updatePlaylistRequest);
+        playlistDao.savePlaylist(existingPlaylist);
+
+        PlaylistModel updatedPlaylistModel = new ModelConverter().toPlaylistModel(existingPlaylist);
+
+
         return UpdatePlaylistResult.builder()
                 .withPlaylist(new PlaylistModel())
                 .build();
     }
+
+    private void validateRequest(UpdatePlaylistRequest updateRequest, Playlist existingPlaylist) {
+        validateAttributes(updateRequest, existingPlaylist);
+        validateAttributeChanges(updateRequest, existingPlaylist);
+    }
+
+    private void validateAttributes(UpdatePlaylistRequest updateRequest, Playlist existingPlaylist) {
+        if (!MusicPlaylistServiceUtils.isValidString(updateRequest.getName()) || !MusicPlaylistServiceUtils.isValidString(updateRequest.getCustomerId())) {
+            throw new InvalidAttributeValueException("Invalid characters in playlist name or customer ID");
+        }
+    }
+
+    private void validateAttributeChanges(UpdatePlaylistRequest updateRequest, Playlist existingPlaylist) {
+        if (!existingPlaylist.getCustomerId().equals(updateRequest.getCustomerId())) {
+            throw new InvalidAttributeChangeException("Customer ID cannot be changed");
+        }
+    }
+
+    private void updatePlaylist(Playlist existingPlaylist, UpdatePlaylistRequest updateRequest) {
+        existingPlaylist.setName(updateRequest.getName());
+        existingPlaylist.setTags(updateRequest.getTags() != null ? new HashSet<>(updateRequest.getTags()) : null);
+    }
+
 }
