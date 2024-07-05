@@ -19,6 +19,11 @@ public class AlbumTrackDao {
      */
     @Inject
     public AlbumTrackDao(DynamoDBMapper dynamoDbMapper) {
+
         this.dynamoDbMapper = dynamoDbMapper;
     }
+    public AlbumTrack getAlbumTrack(String asin, Integer trackNumber) {
+        return dynamoDbMapper.load(AlbumTrack.class, asin, trackNumber);
+    }
+
 }

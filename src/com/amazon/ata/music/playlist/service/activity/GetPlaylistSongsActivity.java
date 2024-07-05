@@ -7,12 +7,18 @@ import com.amazon.ata.music.playlist.service.dynamodb.PlaylistDao;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.google.errorprone.annotations.IncompatibleModifiers;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
-import java.util.Collections;
+import com.amazon.ata.music.playlist.service.converters.ModelConverter;
+import com.amazon.ata.music.playlist.service.dynamodb.models.AlbumTrack;
+import com.amazon.ata.music.playlist.service.dynamodb.models.Playlist;
+import com.amazon.ata.music.playlist.service.exceptions.PlaylistNotFoundException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of the GetPlaylistSongsActivity for the MusicPlaylistService's GetPlaylistSongs API.
@@ -47,8 +53,21 @@ public class GetPlaylistSongsActivity implements RequestHandler<GetPlaylistSongs
     public GetPlaylistSongsResult handleRequest(final GetPlaylistSongsRequest getPlaylistSongsRequest, Context context) {
         log.info("Received GetPlaylistSongsRequest {}", getPlaylistSongsRequest);
 
+        Playlist playlist = playlistDao.getPlaylist(getPlaylistSongsRequest.getId());
+        if (playlist == null) {
+            throw new PlaylistNotFoundException("Could not find playlist with id " + getPlaylistSongsRequest.getId());
+        }
+
+        // Convert AlbumTrack to SongModel
+        ModelConverter converter = new ModelConverter();
+        List<SongModel> songModels = new ArrayList<>();
+        for (AlbumTrack albumTrack : playlist.getSongList()) {
+            songModels.add(converter.toSongModel(albumTrack));
+        }
+
+        // Return the result
         return GetPlaylistSongsResult.builder()
-                .withSongList(Collections.singletonList(new SongModel()))
+                .withSongList(songModels)
                 .build();
     }
 }
